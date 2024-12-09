@@ -6,24 +6,37 @@
 // In practice, you can start with cv::GaussianBlur, then replace it with a custom kernel for parallelization.
 void gaussianBlurCPU(const cv::Mat &input, cv::Mat &output)
 {
-    // Simple 3x3 Gaussian kernel
-    float kernel[3][3] = {
-        {1 / 16.0f, 2 / 16.0f, 1 / 16.0f},
-        {2 / 16.0f, 4 / 16.0f, 2 / 16.0f},
-        {1 / 16.0f, 2 / 16.0f, 1 / 16.0f}};
+    // 5x5 Gaussian kernel
+    float kernel[5][5] = {
+        {1,  4,  6,  4,  1},
+        {4, 16, 24, 16,  4},
+        {6, 24, 36, 24,  6},
+        {4, 16, 24, 16,  4},
+        {1,  4,  6,  4,  1}
+    };
 
-    for (int y = 1; y < input.rows - 1; y++)
+    // Normalize the kernel
+    float sumKernel = 0.0f;
+    for (int i = 0; i < 5; i++)
+        for (int j = 0; j < 5; j++)
+            sumKernel += kernel[i][j];
+    for (int i = 0; i < 5; i++)
+        for (int j = 0; j < 5; j++)
+            kernel[i][j] /= sumKernel;
+
+    // Apply kernel to the image
+    for (int y = 2; y < input.rows - 2; y++)  // Adjusted for 5x5 kernel
     {
-        for (int x = 1; x < input.cols - 1; x++)
+        for (int x = 2; x < input.cols - 2; x++)  // Adjusted for 5x5 kernel
         {
             float sum = 0.0f;
-            for (int ky = -1; ky <= 1; ky++)
+            for (int ky = -2; ky <= 2; ky++)  // Adjusted for 5x5 kernel
             {
-                for (int kx = -1; kx <= 1; kx++)
+                for (int kx = -2; kx <= 2; kx++)  // Adjusted for 5x5 kernel
                 {
                     int px = x + kx;
                     int py = y + ky;
-                    sum += input.at<uchar>(py, px) * kernel[ky + 1][kx + 1];
+                    sum += input.at<uchar>(py, px) * kernel[ky + 2][kx + 2];
                 }
             }
             output.at<uchar>(y, x) = static_cast<uchar>(sum);
@@ -98,8 +111,8 @@ int main()
         cap >> frame;
     }
 
-    // benchmark processing 100 frames for example
-    int num_frames = 100;
+    // benchmark processing x frames
+    int num_frames = 200;
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < num_frames; i++)
